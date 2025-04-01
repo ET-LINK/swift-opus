@@ -1,2 +1,45 @@
-.build
+# Xcode
+#
+# User-specific files
+*.xcuserstate
+
+# Build generated files
+build/
+DerivedData/
+
+# Swift Package Manager
+.swiftpm/
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/
+
+# SwiftLint
+.swiftlint.yml
+
+# Xcode workspace settings
+*.xcworkspace
+
+# Xcode project settings
+xcuserdata/
+
+# Temporary files
+*.swp
+*.swo
+*.lock
+*.idea/
+
+# .DS_Store files
 .DS_Store
+
+# Archives
+*.xcarchive
+
+# iOS Provisioning Profiles
+*.mobileprovision
+*.provisionprofile
+
+# App-specific configurations
+*.xcodeproj/project.xcworkspace/xcuserdata/
