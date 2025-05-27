@@ -43,3 +43,5 @@ xcuserdata/
 
 # App-specific configurations
 *.xcodeproj/project.xcworkspace/xcuserdata/
+.build
+.vscode

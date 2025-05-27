@@ -103,22 +103,3 @@ extension Opus.Decoder {
 		return Int(decodedCount)
 	}
 }
-
-extension AVAudioPCMBuffer {
-    public func toData() -> Data? {
-	guard let channelData = self.floatChannelData else { return nil }
-	
-	let channelCount = Int(self.format.channelCount)
-	let frameLength = Int(self.frameLength)
-	let stride = self.stride
-	
-	var data = Data(capacity: frameLength * channelCount * stride)
-	
-	for channel in 0..<channelCount {
-	    let channelPtr = channelData[channel]
-	    data.append(Data(bytes: channelPtr, count: frameLength * stride))
-	}
-	
-	return data
-    }
-}
