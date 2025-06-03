@@ -109,20 +109,23 @@ extension Opus.Decoder {
 
 extension Opus.Decoder {
 	/// 解码 Opus 数据到 CMSampleBuffer
-	/// - Parameter input: 输入的 Opus 编码数据
+	/// - Parameters:
+	///   - input: 输入的 AVAudioPCMBuffer
+	///   - presentationTimeStamp: 可选的显示时间戳，如果为nil则使用零时间戳
 	/// - Returns: 解码后的 CMSampleBuffer
 	/// - Throws: Opus.Error 解码过程中的错误
-	public func decodeToCMSampleBuffer(_ input: AVAudioPCMBuffer) throws -> CMSampleBuffer {
-		return try createCMSampleBuffer(from: input)
+	public func decodeToCMSampleBuffer(_ input: AVAudioPCMBuffer, presentationTimeStamp: CMTime? = nil) throws -> CMSampleBuffer {
+		let timeStamp = presentationTimeStamp ?? CMTime.zero
+		return try createCMSampleBuffer(from: input, presentationTimeStamp: timeStamp)
 	}
 
 	/// 从 AVAudioPCMBuffer 创建 CMSampleBuffer
 	/// - Parameters:
 	///   - audioBuffer: 音频PCM缓冲区
-	///   - presentationTimeStamp: 显示时间戳，默认为零
+	///   - presentationTimeStamp: 显示时间戳
 	/// - Returns: CMSampleBuffer
 	/// - Throws: Opus.Error 转换过程中的错误
-	private func createCMSampleBuffer(from audioBuffer: AVAudioPCMBuffer, presentationTimeStamp: CMTime = CMTime.zero) throws -> CMSampleBuffer {
+	private func createCMSampleBuffer(from audioBuffer: AVAudioPCMBuffer, presentationTimeStamp: CMTime) throws -> CMSampleBuffer {
 		let audioBufferList = audioBuffer.audioBufferList.pointee
 
 		// 创建音频格式描述
