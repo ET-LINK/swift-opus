@@ -157,3 +157,49 @@ extension Data {
 		return buffer
 	}
 }
+
+extension Data {
+	/// 强制将 Float32 格式的 AVAudioPCMBuffer 转换为 Int16 格式的 Data
+	/// - Parameter buffer: Float32 格式的音频缓冲区
+	/// - Throws: 如果缓冲区格式不是 Float32 或转换失败则抛出错误
+	/// - Returns: Int16 格式的 PCM 数据
+	public init(pcmBufferAsInt16 buffer: AVAudioPCMBuffer) throws {
+		guard let channelData = buffer.floatChannelData else {
+			throw Opus.Error.badArgument
+		}
+
+		guard buffer.format.commonFormat == .pcmFormatFloat32 else {
+			throw Opus.Error.badArgument
+		}
+
+		let frameLength = Int(buffer.frameLength)
+		let channelCount = Int(buffer.format.channelCount)
+		let dataSize = frameLength * channelCount * MemoryLayout<Int16>.size
+
+		self.init(count: dataSize)
+
+		self.withUnsafeMutableBytes { bytes in
+			let int16Ptr = bytes.bindMemory(to: Int16.self)
+
+			if buffer.format.isInterleaved {
+				// 交错格式
+				let sourcePtr = channelData[0]
+				for i in 0..<frameLength * channelCount {
+					// 将 Float32 [-1.0, 1.0] 转换为 Int16 [-32768, 32767]
+					let floatValue = sourcePtr[i]
+					let clampedValue = max(-1.0, min(1.0, floatValue))
+					int16Ptr[i] = Int16(clampedValue * 32767.0)
+				}
+			} else {
+				// 非交错格式，转换为交错并转换数据类型
+				for frame in 0..<frameLength {
+					for channel in 0..<channelCount {
+						let floatValue = channelData[channel][frame]
+						let clampedValue = max(-1.0, min(1.0, floatValue))
+						int16Ptr[frame * channelCount + channel] = Int16(clampedValue * 32767.0)
+					}
+				}
+			}
+		}
+	}
+}
