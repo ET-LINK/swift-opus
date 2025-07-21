@@ -6,10 +6,6 @@ extension Data {
 	/// - Parameter buffer: 要转换的音频缓冲区
 	/// - Throws: 如果缓冲区格式不支持或转换失败则抛出错误
 	public init(pcmBuffer buffer: AVAudioPCMBuffer) throws {
-				guard let channelData = buffer.floatChannelData else {
-			throw Opus.Error.badArgument
-		}
-
 		guard buffer.format.isValidOpusPCMFormat else {
 			throw Opus.Error.badArgument
 		}
@@ -25,6 +21,10 @@ extension Data {
 		switch buffer.format.commonFormat {
 		case .pcmFormatFloat32:
 			// Float32 PCM 数据
+			guard let channelData = buffer.floatChannelData else {
+				throw Opus.Error.badArgument
+			}
+
 			if buffer.format.isInterleaved {
 				// 交错格式
 				let dataSize = frameLength * channelCount * MemoryLayout<Float>.size
@@ -51,13 +51,17 @@ extension Data {
 			}
 		case .pcmFormatInt16:
 			// Int16 PCM 数据
+			guard let channelData = buffer.int16ChannelData else {
+				throw Opus.Error.badArgument
+			}
+
 			if buffer.format.isInterleaved {
 				// 交错格式
 				let dataSize = frameLength * channelCount * MemoryLayout<Int16>.size
 				self.init(count: dataSize)
 				self.withUnsafeMutableBytes { bytes in
 					let int16Ptr = bytes.bindMemory(to: Int16.self)
-					let sourcePtr = UnsafeRawPointer(channelData[0]).bindMemory(to: Int16.self, capacity: frameLength * channelCount)
+					let sourcePtr = channelData[0]
 					for i in 0..<frameLength * channelCount {
 						int16Ptr[i] = sourcePtr[i]
 					}
@@ -70,8 +74,7 @@ extension Data {
 					let int16Ptr = bytes.bindMemory(to: Int16.self)
 					for frame in 0..<frameLength {
 						for channel in 0..<channelCount {
-							let channelPtr = UnsafeRawPointer(channelData[channel]).bindMemory(to: Int16.self, capacity: frameLength)
-							int16Ptr[frame * channelCount + channel] = channelPtr[frame]
+							int16Ptr[frame * channelCount + channel] = channelData[channel][frame]
 						}
 					}
 				}
@@ -167,15 +170,15 @@ extension Data {
 			throw Opus.Error.badArgument
 		}
 
-		guard let channelData = buffer.floatChannelData else {
-			throw Opus.Error.badArgument
-		}
+				buffer.frameLength = calculatedFrameCapacity
 
-		buffer.frameLength = calculatedFrameCapacity
+		switch format.commonFormat {
+		case .pcmFormatFloat32:
+			guard let channelData = buffer.floatChannelData else {
+				throw Opus.Error.badArgument
+			}
 
-		self.withUnsafeBytes { bytes in
-			switch format.commonFormat {
-			case .pcmFormatFloat32:
+			self.withUnsafeBytes { bytes in
 				let sourcePtr = bytes.bindMemory(to: Float.self)
 				if format.isInterleaved {
 					// 交错格式
@@ -191,11 +194,17 @@ extension Data {
 						}
 					}
 				}
-			case .pcmFormatInt16:
+			}
+		case .pcmFormatInt16:
+			guard let channelData = buffer.int16ChannelData else {
+				throw Opus.Error.badArgument
+			}
+
+			self.withUnsafeBytes { bytes in
 				let sourcePtr = bytes.bindMemory(to: Int16.self)
 				if format.isInterleaved {
 					// 交错格式
-					let destPtr = UnsafeMutableRawPointer(channelData[0]).bindMemory(to: Int16.self, capacity: Int(calculatedFrameCapacity) * channelCount)
+					let destPtr = channelData[0]
 					for i in 0..<Int(calculatedFrameCapacity) * channelCount {
 						destPtr[i] = sourcePtr[i]
 					}
@@ -203,14 +212,13 @@ extension Data {
 					// 非交错格式
 					for frame in 0..<Int(calculatedFrameCapacity) {
 						for channel in 0..<channelCount {
-							let destPtr = UnsafeMutableRawPointer(channelData[channel]).bindMemory(to: Int16.self, capacity: Int(calculatedFrameCapacity))
-							destPtr[frame] = sourcePtr[frame * channelCount + channel]
+							channelData[channel][frame] = sourcePtr[frame * channelCount + channel]
 						}
 					}
 				}
-			default:
-				break
 			}
+		default:
+			throw Opus.Error.badArgument
 		}
 
 		return buffer
